@@ -27,7 +27,7 @@ contract LemonadeStand {
 
     event Sold(uint256 skuCount);
 
-    event Shipped(uint sku);
+    event Shipped(uint256 sku);
 
     modifier onlyOwner() {
         require(msg.sender == owner);
@@ -54,6 +54,13 @@ contract LemonadeStand {
         _;
     }
 
+    modifier checkValue(uint256 _sku) {
+        uint256 _price = items[_sku].price;
+        uint256 amountToRefund = msg.value - _price;
+        payable(items[_sku].buyer).transfer(amountToRefund);
+        _;
+    }
+
     constructor() public {
         owner = msg.sender;
         skuCount = 0;
@@ -77,13 +84,18 @@ contract LemonadeStand {
         payable
         forSale(_sku)
         paidEnough(items[_sku].price)
+        checkValue(_sku)
     {
         address buyer = msg.sender;
         address seller = items[_sku].seller;
         uint256 price = items[_sku].price;
+
         items[_sku].buyer = buyer;
         items[_sku].state = State.Sold;
         payable(seller).transfer(price);
+        if (price < msg.value) {
+            payable(buyer).transfer(msg.value - price);
+        }
         emit Sold(_sku);
     }
 
@@ -115,7 +127,11 @@ contract LemonadeStand {
         buyer = items[_sku].buyer;
     }
 
-    function shipItem(uint _sku) public sold(_sku) verifyCaller(items[_sku].seller) {
+    function shipItem(uint256 _sku)
+        public
+        sold(_sku)
+        verifyCaller(items[_sku].seller)
+    {
         items[_sku].state = State.Shipped;
         emit Shipped(_sku);
     }
