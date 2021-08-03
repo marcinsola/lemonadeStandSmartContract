@@ -8,7 +8,8 @@ contract LemonadeStand {
 
     enum State {
         ForSale,
-        Sold
+        Sold,
+        Shipped
     }
 
     struct Item {
@@ -25,6 +26,8 @@ contract LemonadeStand {
     event ForSale(uint256 skuCount);
 
     event Sold(uint256 skuCount);
+
+    event Shipped(uint sku);
 
     modifier onlyOwner() {
         require(msg.sender == owner);
@@ -110,5 +113,10 @@ contract LemonadeStand {
 
         seller = items[_sku].seller;
         buyer = items[_sku].buyer;
+    }
+
+    function shipItem(uint _sku) public sold(_sku) verifyCaller(items[_sku].seller) {
+        items[_sku].state = State.Shipped;
+        emit Shipped(_sku);
     }
 }
